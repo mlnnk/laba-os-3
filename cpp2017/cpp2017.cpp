@@ -5,12 +5,12 @@
 
 int main() {
     int size, n;
-    std::cout << "Enter array size: ";
+    std::cout << "Введите размер массива: ";
     std::cin >> size;
 
     std::vector<int> arr(size, 0);
 
-    std::cout << "Enter number of marker threads: ";
+    std::cout << "Введите количество потоков marker: ";
     std::cin >> n;
 
     HANDLE* threads = new HANDLE[n];
@@ -21,7 +21,7 @@ int main() {
     HANDLE stopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     HANDLE resumeEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
-    // Создание потоков
+    
     for (int i = 0; i < n; ++i) {
         doneEvents[i] = CreateEvent(nullptr, TRUE, FALSE, nullptr);
         params[i] = new MarkerParams;
@@ -48,11 +48,11 @@ int main() {
           
             ResetEvent(doneEvents[idx]);
 
-            std::cout << "Array state: ";
+            std::cout << "Состояние массива: ";
             for (int v : arr) std::cout << v << " ";
             std::cout << std::endl;
 
-            std::cout << "Stopping marker " << params[idx]->id << std::endl;
+            std::cout << "Остановка маркера " << params[idx]->id << std::endl;
 
             
             SetEvent(stopEvent);
@@ -66,7 +66,7 @@ int main() {
                 running = false;
             }
             else {
-                std::cout << "Continuing others...\n";
+                
                 ResetEvent(stopEvent); 
                 SetEvent(resumeEvent);
                 ResetEvent(resumeEvent); 
@@ -74,7 +74,7 @@ int main() {
         }
     }
 
-    std::cout << "Final array: ";
+    std::cout << "Итоговый массив: ";
     for (int v : arr) std::cout << v << " ";
     std::cout << std::endl;
 

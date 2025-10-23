@@ -1,21 +1,21 @@
-﻿# CMakeList.txt: проект CMake для cpp1998; включите исходный код и определения,
-# укажите здесь логику для конкретного проекта.
+﻿
+cmake_minimum_required(VERSION 3.8)
+
+project(cpp1998 LANGUAGES CXX)
+
+
+add_library(cpp1998lib
+    src/marker_logic.cpp
+    src/marker_thread.cpp
+)
+
+target_include_directories(cpp1998lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+
+add_executable(Laba3-cpp1998 cpp1998.cpp)
+target_include_directories(Laba3-cpp1998 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(Laba3-cpp1998 PRIVATE cpp1998lib)
+
 #
-cmake_minimum_required (VERSION 3.8)
-
-# Включение горячей перезагрузки для компиляторов MSVC, если поддерживается.
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
-
-project ("cpp1998")
-
-# Добавьте источник в исполняемый файл этого проекта.
-add_executable (cpp1998 "cpp1998.cpp" "cpp1998.h")
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET cpp1998 PROPERTY CXX_STANDARD 20)
-endif()
-
-# TODO: Добавьте тесты и целевые объекты, если это необходимо.
+set_target_properties(cpp1998lib PROPERTIES CXX_STANDARD 98 CXX_STANDARD_REQUIRED YES)
+set_target_properties(Laba3-cpp1998 PROPERTIES CXX_STANDARD 98 CXX_STANDARD_REQUIRED YES)

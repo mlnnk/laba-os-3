@@ -1,21 +1,35 @@
-﻿# CMakeList.txt: проект CMake для laba-os-3; включите исходный код и определения,
-# укажите здесь логику для конкретного проекта.
-#
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.16)
+project(MyMarkers LANGUAGES CXX)
 
-# Включение горячей перезагрузки для компиляторов MSVC, если поддерживается.
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
 
-project ("laba-os-3")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Добавьте источник в исполняемый файл этого проекта.
-add_executable (laba-os-3  "laba-os-3.h")
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET laba-os-3 PROPERTY CXX_STANDARD 20)
-endif()
+add_subdirectory(cpp2017)
+add_subdirectory(cpp1998)
 
-# TODO: Добавьте тесты и целевые объекты, если это необходимо.
+
+include(FetchContent)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+)
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+
+add_executable(Unit_tests_2017 Unit_tests/Unit_tests.cpp)
+target_link_libraries(Unit_tests_2017 PRIVATE cpp2017lib GTest::gtest_main)
+set_target_properties(Unit_tests_2017 PROPERTIES CXX_STANDARD 17)
+
+
+add_executable(Unit_tests_1998 Unit_tests/Unit_tests.cpp)
+target_link_libraries(Unit_tests_1998 PRIVATE cpp1998lib GTest::gtest_main)
+set_target_properties(Unit_tests_1998 PROPERTIES CXX_STANDARD 98)
+
+include(GoogleTest)
+gtest_discover_tests(Unit_tests_2017)
+gtest_discover_tests(Unit_tests_1998)

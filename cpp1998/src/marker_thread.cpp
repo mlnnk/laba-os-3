@@ -34,9 +34,10 @@ DWORD WINAPI MarkerThread(LPVOID param) {
          
         }
     }
-
-    for (auto& v : *p->array) {
-        if (v == p->id) v = 0;
+    for (int i = 0; i < p->array->size(); ++i) {
+        if ((*p->array)[i] == p->id) {
+            (*p->array)[i] = 0;
+        }
     }
 
     return 0;
