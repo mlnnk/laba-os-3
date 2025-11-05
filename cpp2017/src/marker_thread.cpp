@@ -8,36 +8,37 @@ DWORD WINAPI MarkerThread(LPVOID param) {
     WaitForSingleObject(p->startEvent, INFINITE);
 
     while (true) {
-       
-        if (WaitForSingleObject(p->stopEvent, 0) == WAIT_OBJECT_0) {
+        if (WaitForSingleObject(p->stopEvent, 0) == WAIT_OBJECT_0)
             break;
-        }
 
-        bool success = logic.step(*p->array);
+        int blockedIndex = -1;
+        bool success = logic.step(*p->array, blockedIndex);
+
         if (success) {
-            Sleep(5);
+            continue;
         }
         else {
+            
+            EnterCriticalSection(p->printCS);
             std::cout << "Маркер " << p->id
-                << " заблокирован, помечено: " << logic.getMarkedCount()
+                << " заблокирован на индексе " << blockedIndex
+                << ", помечено: " << logic.getMarkedCount()
                 << std::endl;
+            LeaveCriticalSection(p->printCS);
 
             SetEvent(p->doneEvent);
 
-           
             HANDLE events[2] = { p->resumeEvent, p->stopEvent };
             DWORD waitResult = WaitForMultipleObjects(2, events, FALSE, INFINITE);
 
-            if (waitResult == WAIT_OBJECT_0 + 1) { 
+            if (waitResult == WAIT_OBJECT_0 + 1)
                 break;
-            }
-         
         }
     }
 
-    for (auto& v : *p->array) {
+    
+    for (auto& v : *p->array)
         if (v == p->id) v = 0;
-    }
 
     return 0;
 }

@@ -4,6 +4,9 @@
 #include "marker_thread.h"
 
 int main() {
+    SetConsoleOutputCP(1251);
+    SetConsoleCP(1251);
+
     int size, n;
     std::cout << "Введите размер массива: ";
     std::cin >> size;
@@ -18,78 +21,82 @@ int main() {
     HANDLE* doneEvents = new HANDLE[n];
 
     HANDLE startEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-    HANDLE stopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-    HANDLE resumeEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
     
+    CRITICAL_SECTION printCS;
+    InitializeCriticalSection(&printCS);
+
     for (int i = 0; i < n; ++i) {
         doneEvents[i] = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+
         params[i] = new MarkerParams;
         params[i]->id = i + 1;
         params[i]->array = &arr;
         params[i]->startEvent = startEvent;
-        params[i]->stopEvent = stopEvent;
-        params[i]->resumeEvent = resumeEvent;
+        params[i]->stopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        params[i]->resumeEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         params[i]->doneEvent = doneEvents[i];
+        params[i]->printCS = &printCS;
+
         threads[i] = CreateThread(nullptr, 0, MarkerThread, params[i], 0, nullptr);
     }
 
     SetEvent(startEvent);
 
     int activeThreads = n;
-    bool running = true;
 
-    while (running && activeThreads > 0) {
-        DWORD result = WaitForMultipleObjects(n, doneEvents, FALSE, INFINITE);
+    while (activeThreads > 0) {
+      
+        WaitForMultipleObjects(n, doneEvents, TRUE, INFINITE);
 
-        if (result >= WAIT_OBJECT_0 && result < WAIT_OBJECT_0 + n) {
-            int idx = result - WAIT_OBJECT_0;
+        EnterCriticalSection(&printCS);
+        std::cout << "Состояние массива: ";
+        for (int v : arr) std::cout << v << " ";
+        std::cout << std::endl;
+        LeaveCriticalSection(&printCS);
 
-          
-            ResetEvent(doneEvents[idx]);
+        int killId;
+        std::cout << "Введите номер маркера для завершения: ";
+        std::cin >> killId;
 
-            std::cout << "Состояние массива: ";
-            for (int v : arr) std::cout << v << " ";
-            std::cout << std::endl;
+        int killIdx = killId - 1;
+        if (killIdx < 0 || killIdx >= n || threads[killIdx] == nullptr) {
+            std::cout << "Некорректный номер" << std::endl;
+            continue;
+        }
 
-            std::cout << "Остановка маркера " << params[idx]->id << std::endl;
+        SetEvent(params[killIdx]->stopEvent);
+        WaitForSingleObject(threads[killIdx], INFINITE);
+        CloseHandle(threads[killIdx]);
+        threads[killIdx] = nullptr;
+        activeThreads--;
 
-            
-            SetEvent(stopEvent);
-            WaitForSingleObject(threads[idx], INFINITE);
-            CloseHandle(threads[idx]);
-            threads[idx] = nullptr;
-            activeThreads--;
+        EnterCriticalSection(&printCS);
+        std::cout << "После завершения маркера " << killId << ": ";
+        for (int v : arr) std::cout << v << " ";
+        std::cout << std::endl;
+        LeaveCriticalSection(&printCS);
 
-          
-            if (activeThreads == 0) {
-                running = false;
-            }
-            else {
-                
-                ResetEvent(stopEvent); 
-                SetEvent(resumeEvent);
-                ResetEvent(resumeEvent); 
+       
+        for (int i = 0; i < n; ++i) {
+            if (threads[i] != nullptr) { 
+                ResetEvent(doneEvents[i]);  
+                SetEvent(params[i]->resumeEvent);
             }
         }
     }
 
-    std::cout << "Итоговый массив: ";
-    for (int v : arr) std::cout << v << " ";
-    std::cout << std::endl;
+    std::cout << "Все маркеры завершены." << std::endl;
 
-    
     for (int i = 0; i < n; ++i) {
-        if (threads[i]) {
-            CloseHandle(threads[i]);
-        }
+        if (threads[i]) CloseHandle(threads[i]);
         CloseHandle(doneEvents[i]);
+        CloseHandle(params[i]->stopEvent);
+        CloseHandle(params[i]->resumeEvent);
         delete params[i];
     }
-
     CloseHandle(startEvent);
-    CloseHandle(stopEvent);
-    CloseHandle(resumeEvent);
+    DeleteCriticalSection(&printCS);
 
     delete[] threads;
     delete[] params;
